@@ -1,3 +1,4 @@
+# Rebuild 2024-12-01
 FROM rust:1.83-slim AS builder
 
 # Dependencies
