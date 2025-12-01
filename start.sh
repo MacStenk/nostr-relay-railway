@@ -4,57 +4,61 @@ set -e
 echo "🔗 Nostr Relay Startup..."
 
 # Config generieren
-if [ ! -f /app/config.toml ]; then
-  echo "📝 Generating config.toml..."
-  
-  # Whitelist-Pubkeys parsen (komma-getrennt zu array)
-  if [ -n "$WHITELIST_PUBKEYS" ]; then
-    PUBKEY_ARRAY=$(echo "$WHITELIST_PUBKEYS" | sed 's/,/", "/g' | sed 's/^/["/' | sed 's/$/"]/')
-  else
-    PUBKEY_ARRAY="[]"
-  fi
-  
-  cat > /app/config.toml <<EOF
+echo "📝 Generating config.toml..."
+
+# Variablen mit Defaults
+RELAY_URL="${RELAY_URL:-wss://localhost:8080}"
+RELAY_NAME="${RELAY_NAME:-My Nostr Relay}"
+RELAY_DESCRIPTION="${RELAY_DESCRIPTION:-Personal Nostr relay}"
+RELAY_PUBKEY="${RELAY_PUBKEY:-}"
+RELAY_CONTACT="${RELAY_CONTACT:-}"
+WHITELIST_MODE="${WHITELIST_MODE:-false}"
+PORT="${PORT:-8080}"
+
+# Config schreiben (ohne Heredoc um Bash-Probleme zu vermeiden)
+cat > /app/config.toml << 'ENDCONFIG'
 [info]
-relay_url = "${RELAY_URL:-wss://localhost:8080}"
-name = "${RELAY_NAME:-Steven's Nostr Relay}"
-description = "${RELAY_DESCRIPTION:-Personal Nostr relay}"
-pubkey = "${RELAY_PUBKEY:-}"
-contact = "${RELAY_CONTACT:-steven@stevennoack.de}"
+relay_url = "PLACEHOLDER_URL"
+name = "PLACEHOLDER_NAME"
+description = "PLACEHOLDER_DESC"
+pubkey = "PLACEHOLDER_PUBKEY"
+contact = "PLACEHOLDER_CONTACT"
 
 [database]
 data_directory = "/app/db"
 
 [network]
-port = ${PORT:-8080}
+port = PLACEHOLDER_PORT
 address = "0.0.0.0"
 
 [limits]
 messages_per_sec = 3
-subscriptions_per_client = 5
-max_event_bytes = 65536
-max_ws_message_bytes = 65536
+subscriptions_per_client = 10
+max_event_bytes = 131072
+max_ws_message_bytes = 131072
 
 [authorization]
 pubkey_whitelist = []
 
 [retention]
-max_events = 10000
-max_event_age_days = 90
+max_events = 50000
+max_event_age_days = 365
 
 [logging]
+folder = "/app/db"
 level = "info"
+ENDCONFIG
 
-[verified_users]
-mode = "whitelist"
-verify_all = ${WHITELIST_MODE:-true}
-pubkey_whitelist = ${PUBKEY_ARRAY}
-EOF
+# Variablen ersetzen
+sed -i "s|PLACEHOLDER_URL|${RELAY_URL}|g" /app/config.toml
+sed -i "s|PLACEHOLDER_NAME|${RELAY_NAME}|g" /app/config.toml
+sed -i "s|PLACEHOLDER_DESC|${RELAY_DESCRIPTION}|g" /app/config.toml
+sed -i "s|PLACEHOLDER_PUBKEY|${RELAY_PUBKEY}|g" /app/config.toml
+sed -i "s|PLACEHOLDER_CONTACT|${RELAY_CONTACT}|g" /app/config.toml
+sed -i "s|PLACEHOLDER_PORT|${PORT}|g" /app/config.toml
 
-  echo "✅ Config generated!"
-  echo "🔐 Whitelist mode: ${WHITELIST_MODE:-true}"
-  echo "📋 Whitelisted pubkeys: $WHITELIST_PUBKEYS"
-fi
+echo "✅ Config generated!"
+cat /app/config.toml
 
-echo "🗄️  Starting Nostr Relay..."
+echo "🗄️  Starting Nostr Relay on port ${PORT}..."
 exec /app/nostr-rs-relay --config /app/config.toml
