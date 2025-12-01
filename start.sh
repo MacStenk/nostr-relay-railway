@@ -1,14 +1,13 @@
 #!/bin/bash
 set -e
 
-echo "🔗 Nostr Relay Startup..."
+echo "🔗 Nostr Relay + Landing Page Startup..."
 
 RELAY_URL="${RELAY_URL:-wss://localhost:8080}"
 RELAY_NAME="${RELAY_NAME:-My Nostr Relay}"
 RELAY_DESCRIPTION="${RELAY_DESCRIPTION:-Personal Nostr relay}"
 RELAY_PUBKEY="${RELAY_PUBKEY:-}"
 RELAY_CONTACT="${RELAY_CONTACT:-}"
-PORT="${PORT:-8080}"
 
 echo "📝 Generating config.toml..."
 
@@ -24,8 +23,8 @@ contact = "${RELAY_CONTACT}"
 data_directory = "/app/db"
 
 [network]
-port = ${PORT}
-address = "0.0.0.0"
+port = 8080
+address = "127.0.0.1"
 
 [limits]
 messages_per_sec = 3
@@ -42,8 +41,10 @@ folder = "/app/db"
 level = "info"
 ENDCONFIG
 
-echo "✅ Config generated - PUBLIC RELAY (no whitelist)"
-cat /app/config.toml
+echo "✅ Config generated!"
 
-echo "🗄️  Starting Nostr Relay on port ${PORT}..."
+echo "🌐 Starting nginx on port 80..."
+nginx
+
+echo "🗄️  Starting Nostr Relay on port 8080..."
 exec /app/nostr-rs-relay --config /app/config.toml

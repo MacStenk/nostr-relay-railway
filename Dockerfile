@@ -1,7 +1,6 @@
-# Rebuild 2024-12-01
+# v4 - mit Landing Page
 FROM rust:1.83-slim AS builder
 
-# Dependencies
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
@@ -11,33 +10,25 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-
-# nostr-rs-relay klonen
 RUN git clone --depth 1 https://github.com/scsibug/nostr-rs-relay.git .
-
-# Binary bauen
 RUN cargo build --release
 
-# Runtime Image
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
+    nginx \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-# Binary kopieren
-COPY --from=builder /build/target/release/nostr-rs-relay /app/nostr-rs-relay
-
-# Start-Script
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
-
-# Datenbank-Verzeichnis
 RUN mkdir -p /app/db
 
-EXPOSE 8080
+COPY --from=builder /build/target/release/nostr-rs-relay /app/nostr-rs-relay
+COPY start.sh /app/start.sh
+COPY index.html /var/www/html/index.html
+COPY nginx.conf /etc/nginx/nginx.conf
+
+RUN chmod +x /app/start.sh
 
 CMD ["/app/start.sh"]
