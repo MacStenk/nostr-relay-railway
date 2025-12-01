@@ -1,4 +1,4 @@
-# v4 - mit Landing Page
+# v7 - whitelist enabled
 FROM rust:1.83-slim AS builder
 
 RUN apt-get update && apt-get install -y \
@@ -18,7 +18,6 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
-    nginx \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -26,8 +25,6 @@ RUN mkdir -p /app/db
 
 COPY --from=builder /build/target/release/nostr-rs-relay /app/nostr-rs-relay
 COPY start.sh /app/start.sh
-COPY index.html /var/www/html/index.html
-COPY nginx.conf /etc/nginx/nginx.conf
 
 RUN chmod +x /app/start.sh
 
